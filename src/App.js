@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 
 const STOCK_URL = 
-  'https://yrg0sk9dd3.execute-api.us-east-1.amazonaws.com/dev/stocks';
+  'https://jopfne5hyb.execute-api.us-east-1.amazonaws.com/dev/stocks';
 
 class App extends Component {
   constructor(props) {
