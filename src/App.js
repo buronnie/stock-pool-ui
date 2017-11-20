@@ -10,6 +10,7 @@ class App extends Component {
     this.state = {
       stocks: [],
       inputStockName: '',
+      inputStockSymbol: '',
       errors: undefined,
     };
   }
@@ -20,26 +21,38 @@ class App extends Component {
       .then(resp => this.setState({ stocks: resp }));
   }
 
-  bindInput = (el) => {
-    this.input = el;
+  bindInputName = (el) => {
+    this.inputName = el;
   }
 
-  hasExisted(stockName) {
-    return this.state.stocks.some(stock => stock.name === stockName);
+  bindInputSymbol = (el) => {
+    this.inputSymbol = el;
+  }
+
+  hasExisted(stockName, stockSymbol) {
+    return this.state.stocks.some(stock =>
+      stock.name === stockName || stock.symbol === stockSymbol);
   }
 
   handleAddStock = (ev) => {
     const name = this.state.inputStockName.trim();
+    const symbol = this.state.inputStockSymbol.trim();
 
     if (name === '') {
       this.setState({ errors: 'Stock name cannot be empty.'});
-      this.input.focus();
+      this.inputName.focus();
       return;
     }
 
-    if (this.hasExisted(name)) {
+    if (symbol === '') {
+      this.setState({ errors: 'Stock symbol cannot be empty.'});
+      this.inputSymbol.focus();
+      return;
+    }
+
+    if (this.hasExisted(name, symbol)) {
       this.setState({ errors: 'Stock has been added before.'});
-      this.input.focus();
+      this.inputName.focus();
       return;
     }
 
@@ -47,17 +60,19 @@ class App extends Component {
       method: 'POST',
       body: JSON.stringify({
         name,
+        symbol,
       }),
     }).then(resp => {
       if (resp.status === 200) {
         this.setState({
           stocks: [
             ...this.state.stocks,
-            { name }
+            { name, symbol }
           ],
           inputStockName: '',
+          inputStockSymbol: '',
         });
-        this.input.focus();
+        this.inputName.focus();
         this.setState({ errors: '' });
       }
     }, (err) => {
@@ -65,9 +80,15 @@ class App extends Component {
     });
   }
 
-  handleInputChange = (ev) => {
+  handleInputNameChange = (ev) => {
     this.setState({
       inputStockName: ev.target.value,
+    });
+  }
+
+  handleInputSymbolChange = (ev) => {
+    this.setState({
+      inputStockSymbol: ev.target.value,
     });
   }
 
@@ -82,15 +103,26 @@ class App extends Component {
   renderInput() {
     return (
       <div className="form-group row">
-        <label htmlFor="stockName" className="col-form-label">Add Stock</label>
+        <label htmlFor="stockName" className="col-form-label">Stock Name</label>
         <div className="col-3">
           <input 
             id="stockName"
             type="text"
             className="form-control"
             value={this.state.inputStockName}
-            onChange={this.handleInputChange}
-            ref={this.bindInput}
+            onChange={this.handleInputNameChange}
+            ref={this.bindInputName}
+          />  
+        </div>
+        <label htmlFor="stockSymbol" className="col-form-label">Stock Symbol</label>
+        <div className="col-3">
+          <input 
+            id="stockSymbol"
+            type="text"
+            className="form-control"
+            value={this.state.inputStockSymbol}
+            onChange={this.handleInputSymbolChange}
+            ref={this.bindInputSymbol}
           />  
         </div>
         <button 
@@ -104,7 +136,7 @@ class App extends Component {
 
   renderStockRow(stock) {
     return (
-      <div key={stock.name}>{stock.name}</div>
+      <div key={stock.name}>{`${stock.name}  (${stock.symbol})`}</div>
     );
   }
 
