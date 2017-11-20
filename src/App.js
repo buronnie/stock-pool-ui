@@ -1,8 +1,11 @@
 import React, { Component } from 'react';
 import './App.css';
 
-const STOCK_URL = 
+const STOCK_POOL_URL = 
   'https://jopfne5hyb.execute-api.us-east-1.amazonaws.com/dev/stocks';
+
+const STOCK_DATA_URL =
+  'https://rrw2yi3hgj.execute-api.us-east-1.amazonaws.com/dev/stocks';
 
 class App extends Component {
   constructor(props) {
@@ -12,13 +15,25 @@ class App extends Component {
       inputStockName: '',
       inputStockSymbol: '',
       errors: undefined,
+      stockDetailVisibility: {},
+      stockDetails: {},
     };
   }
 
   componentDidMount() {
-    fetch(STOCK_URL)
+    fetch(STOCK_POOL_URL)
       .then(resp => resp.json())
-      .then(resp => this.setState({ stocks: resp }));
+      .then(stocks => {
+        const stockDetailVisibility = {};
+        stocks.forEach(stock => {
+          stockDetailVisibility[stock.symbol] = false;
+        });
+
+        this.setState({
+          stocks,
+          stockDetailVisibility,
+        })
+      });
   }
 
   bindInputName = (el) => {
@@ -56,13 +71,13 @@ class App extends Component {
       return;
     }
 
-    fetch(STOCK_URL, {
+    fetch(STOCK_POOL_URL, {
       method: 'POST',
       body: JSON.stringify({
         name,
         symbol,
       }),
-    }).then(resp => {
+    }).then(resp => {``
       if (resp.status === 200) {
         this.setState({
           stocks: [
@@ -71,6 +86,10 @@ class App extends Component {
           ],
           inputStockName: '',
           inputStockSymbol: '',
+          stockDetailVisibility: {
+            ...this.state.stockDetailVisibility,
+            [symbol]: false,
+          },
         });
         this.inputName.focus();
         this.setState({ errors: '' });
@@ -90,6 +109,47 @@ class App extends Component {
     this.setState({
       inputStockSymbol: ev.target.value,
     });
+  }
+
+  showStockDetail(symbol) {
+    if (!this.state.stockDetails[symbol]) {
+      fetch(`${STOCK_DATA_URL}/${symbol}`)
+        .then(resp => resp.json())
+        .then(resp => this.setState({
+          stockDetailVisibility: {
+            ...this.state.stockDetailVisibility,
+            [symbol]: true,
+          },
+          stockDetails: {
+            ...this.state.stockDetails,
+            [symbol]: resp,
+          }
+        }));
+    } else {
+      this.setState({
+        stockDetailVisibility: {
+          ...this.state.stockDetailVisibility,
+          [symbol]: true,
+        },
+      });
+    }
+  }
+
+  hideStockDetail(symbol) {
+    this.setState({
+      stockDetailVisibility: {
+        ...this.state.stockDetailVisibility,
+        [symbol]: false,
+      },
+    });
+  }
+
+  toggleStockDetail = (symbol) => {
+    if (this.state.stockDetailVisibility[symbol]) {
+      this.hideStockDetail(symbol);
+      return;
+    }
+    this.showStockDetail(symbol);
   }
 
   renderErrors() {
@@ -136,7 +196,23 @@ class App extends Component {
 
   renderStockRow(stock) {
     return (
-      <div key={stock.name}>{`${stock.name}  (${stock.symbol})`}</div>
+      <div className="form-group" key={stock.symbol}>
+        <button
+          type="button"
+          className="d-block btn btn-link"
+          onClick={() => {
+            return this.toggleStockDetail(stock.symbol);
+          }}
+        >
+          {`${stock.name}  (${stock.symbol})`}
+        </button>
+        {
+          this.state.stockDetailVisibility[stock.symbol] && 
+          <div>
+            {JSON.stringify(this.state.stockDetails[stock.symbol])}
+          </div>
+        }
+      </div>
     );
   }
 
